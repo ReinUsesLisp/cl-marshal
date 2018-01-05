@@ -27,6 +27,7 @@
   value)
 
 (defun read-integer (file bytes)
+  ;; TODO test in big-endian
   (loop for i from 0 to (1- bytes)
      for component = (ash (read-byte file) (bytes->bits i))
      summing component into integer
