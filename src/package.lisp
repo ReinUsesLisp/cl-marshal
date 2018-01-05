@@ -17,5 +17,7 @@
 
 (defpackage :marshal
   (:use #:cl #:alexandria #:trivial-utf-8 #:anaphora)
-  (:export
-   ))
+  (:export #:true #:false
+           #:add-class #:add-userdef
+           #:userdef-decode #:userdef-encode
+           #:decode-file #:encode-file))
