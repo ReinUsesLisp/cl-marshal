@@ -19,7 +19,7 @@
   :description "Ruby marshal format decoding/encoding."
   :author "ReinUsesLisp <reinuseslisp@airmail.cc>"
   :license "LLGPL"
-  :depends-on (:alexandria :trivial-utf-8 :anaphora)
+  :depends-on (:alexandria :trivial-utf-8 :anaphora :closer-mop)
   :pathname "src"
   :components ((:file "package")
                (:file "helpers" :depends-on ("package"))
