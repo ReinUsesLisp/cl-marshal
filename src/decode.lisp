@@ -42,7 +42,7 @@
     (unless (symbolp class)
       (error "Invalid Marshal data (class name is not a symbol)."))
     (destructuring-bind (raw-keys values) (read-pairs file syms objs package)
-      (let* ((lisp-class (find-lisp-class class))
+      (let* ((lisp-class (find-lisp-class (symbol-name class)))
              (object (make-instance lisp-class))
              (keys (mapcar #'symbol->slot raw-keys)))
         (awhen (remove-if (lambda (key) (slot-exists-p object key)) keys)

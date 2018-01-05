@@ -22,12 +22,22 @@
      (cons #'encode-array)
      (hash-table #'encode-hash-table)
      (standard-object (cond
-                        ((class-p (type-of object)) #'encode-object)
-                        ((userdef-p (type-of object)) #'encode-userdef)))
+                        ((lisp-class-p (type-of object)) #'encode-object)
+                        ((lisp-userdef-p (type-of object)) #'encode-userdef)))
      (string #'encode-string)
      ((simple-array (unsigned-byte 8) (*)) #'encode-bytes)
      (otherwise (error "Object can not be encoded in a Ruby Marshal format (or it's not implemented yet).~%~A" object)))
    object file))
+
+(defun encode-object (object file)
+  (declare (type standard-object object))
+  (write-byte +object+ file)
+  (encode-symbol (find-ruby-class (type-of object)) file)
+  (let ((slot-definitions (closer-mop:class-direct-slots (class-of object))))
+    (write-integer (length slot-definitions) file)
+    (loop for slot in (mapcar #'closer-mop:slot-definition-name slot-definitions)
+       do (encode-symbol (format nil "@~A" (lisp-symbol->ruby-symbol slot)) file)
+         (encode (slot-value object slot) file))))
 
 (defun encode-bytes (object file)
   (declare (type (simple-array (unsigned-byte 8) (*)) object))
@@ -74,8 +84,11 @@
        (encode value file)))
 
 (defun encode-symbol (object file)
+  (declare (type (or symbol string) object))
   (write-byte +symbol+ file)
-  (let ((name (lisp-symbol->ruby-symbol object)))
+  (let ((name (if (symbolp object)
+                  (lisp-symbol->ruby-symbol object)
+                  object)))
     (write-integer (utf-8-byte-length name) file)
     (write-utf-8-bytes name file :null-terminate nil)))
 

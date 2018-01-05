@@ -49,13 +49,8 @@
 
 (defun valid-ruby-symbol-p (symbol-name)
   (flet ((hyphen-p (char)
-           (char= char #\-))
-         (sane-char-p (char)
-           (if (alpha-char-p char)
-               (lower-case-p char)
-               t)))
-    (and (notany #'hyphen-p symbol-name)
-         (every #'sane-char-p symbol-name))))
+           (char= char #\-)))
+    (notany #'hyphen-p symbol-name)))
 
 (defun symbol->slot (symbol)
   (let ((name (symbol-name symbol)))
@@ -64,12 +59,12 @@
     (intern (subseq name 1) (symbol-package symbol))))
 
 (defun ruby-symbol->lisp-symbol (symbol-name package)
-  (if (or (gethash symbol-name class-list)
-          (gethash symbol-name userdef-list))
+  (if (or (ruby-class-p symbol-name)
+          (ruby-userdef-p symbol-name))
       (intern symbol-name package)
       (progn
         (unless (valid-ruby-symbol-p symbol-name)
-          (error "Unsupported Marshal data. Symbol format must be lower case and without #\-. If it is a class name declare it.~%~A"
+          (error "Unsupported Marshal data. Symbol must not have hyphens (#\-). If it is a class name, declare it.~%~A"
                  symbol-name))
         (intern (substitute #\- #\_ (string-upcase symbol-name)) package))))
 
