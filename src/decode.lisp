@@ -1,6 +1,6 @@
 (in-package :marshal)
 
-(defun decode-file (path &optional (package :cl-user))
+(defun decode-file (path &optional (package *package*))
   (with-open-file (file path :element-type '(unsigned-byte 8))
     (let ((major (read-byte file))
           (minor (read-byte file)))
@@ -17,8 +17,7 @@
     (+false+ 'false)
     (+integer+ (decode-integer file))
     (+array+ (decode-array file syms objs package))
-    (+hash+ (decode-hash file syms objs package nil))
-    (+hash-default+ (decode-hash file syms objs package t))
+    (+hash+ (decode-hash file syms objs package))
     (+symbol+ (decode-symbol file syms package))
     (+symlink+ (decode-symlink file syms))
     (+object-ref+ (decode-object-ref file objs))
@@ -31,6 +30,8 @@
   (let ((index (reserve-hash-index objs))
         (class (decode file syms objs package))
         (bytes (read-bytes file)))
+    (unless (symbolp class)
+      (error "Invalid Marshal data (class name is not a symbol)."))
     (let ((object (make-instance (find-lisp-userdef class))))
       (userdef-decode object (array-dimension bytes 0) bytes)
       (setf (gethash index objs) object))))
@@ -82,10 +83,8 @@
       (error "Invalid Marshal data (invalid symlink).")))
 
 (defun decode-symbol (file syms package)
-  (let* ((length (decode-integer file))
-         (name (read-utf-8-string file :byte-length length))
-         (symbol (intern name package)))
-    (append-to-hash-and-return syms symbol)))
+  (let ((name (read-utf-8-string file :byte-length (decode-integer file))))
+    (append-to-hash-and-return syms (ruby-symbol->lisp-symbol name package))))
 
 (defun decode-array (file syms objs package)
   (let ((index (reserve-hash-index objs))
@@ -93,10 +92,8 @@
                  collect (decode file syms objs package))))
     (setf (gethash index objs) list)))
 
-(defun decode-hash (file syms objs package has-default)
-  (when has-default (error "Default hash not implemented."))
-  (let* (;;(default (if has-default (decode file syms objs) nil))
-         (hash (make-hash-table :test #'equal)))
+(defun decode-hash (file syms objs package)
+  (let* ((hash (make-hash-table :test #'equal)))
     (loop with (keys values) = (read-pairs file syms objs package)
        for key in keys
        for value in values
