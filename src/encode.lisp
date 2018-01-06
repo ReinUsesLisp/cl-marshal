@@ -54,6 +54,16 @@
      (otherwise (error "Object can not be encoded in a Ruby Marshal format (or it's not implemented yet).~%~A" object)))
    object file))
 
+(defun encode-userdef (object file)
+  (declare (type standard-object object))
+  (write-byte +userdef+ file)
+  (encode-symbol (find-ruby-userdef (type-of object)) file)
+  (let ((temporal-buffer (make-in-memory-output-stream)))
+    (userdef-encode object temporal-buffer)
+    (let ((bytes (get-output-stream-sequence temporal-buffer)))
+      (write-integer (length bytes) file)
+      (write-sequence bytes file))))
+
 (defun encode-object (object file)
   (declare (type standard-object object))
   (write-byte +object+ file)
