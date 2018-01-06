@@ -65,8 +65,15 @@ generics:
 (values length bytes-sequence)
 
 
-This library is still under heavy development. Regex, floats, bignums, modules
-and classes are missing.
+When decoding a Ruby boolean, 'marshal:true and 'marshal:false are used
+instead of t and nil. Same goes for encoding (t is unhandled, nil is NilClass)
+
+Encoding an empty list will be done as a NilClass Ruby object instead of an
+empty Array.
+
+
+This library is still under heavy development. Regex, floats, bignums, hash
+tables with a default value, modules and classes are missing.
 
 Byte stream decoding/encoding should be implemented. File streams a kind of
 limitative.
