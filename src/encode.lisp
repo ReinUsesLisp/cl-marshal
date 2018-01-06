@@ -50,9 +50,9 @@
   (declare (type standard-object object))
   (write-byte +object+ file)
   (encode-symbol (find-ruby-class (type-of object)) file)
-  (let ((slot-definitions (class-direct-slots (class-of object))))
+  (let ((slot-definitions (closer-mop:class-direct-slots (class-of object))))
     (write-integer (length slot-definitions) file)
-    (loop for slot in (mapcar #'slot-definition-name slot-definitions)
+    (loop for slot in (mapcar #'closer-mop:slot-definition-name slot-definitions)
        do (encode-symbol (format nil "@~A" (lisp-symbol->ruby-symbol slot)) file)
          (encode (slot-value object slot) file))))
 
