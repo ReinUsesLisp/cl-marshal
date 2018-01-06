@@ -1,0 +1,73 @@
+Common Lisp implementation of Ruby's marshaling library.
+It's designed to be practical, so correctness is secondary.
+
+To decode invoque:
+CL-USER> (marshal:decode-file "input-file")
+
+To encode invoque:
+CL-USER> (marshal:encode-file lisp-object "output-file")
+
+
+To install, clone this repository into your quicklisp/local-projects directory
+and build it:
+CL-USER> (ql:quickload :marshal)
+
+
+Ruby symbols are kind of tricky to convert to Lisp symbols and viceversa.
+
+When decoding a Ruby symbol it's forcefully converted to uppercase unless it's
+a declared userdef or object class symbol (read below). Underscores are
+replaced with hyphens. Some examples (keep in mind how lisp print works with
+symbols):
+:object => 'OBJECT
+:abc_2 => 'ABC-2
+:SomeTitle => 'SOMETITLE ('|SomeTitle| if it's a class name)
+:"some-title" => Error (it has hyphens)
+
+When encoding a Lisp symbol it's forced to be all caps (it's print is standard)
+and without underscores. Symbol is translated to lowercase and hyphens are
+replaced with underscores. Some examples:
+'object => :object
+'some-title => :some_title
+'|object| => Error (it has minus)
+'some_title => Error (it has underscore)
+
+
+Marshal library supports handling Ruby objects and user defined formats.
+
+When trying to decode a file with an object stored in it first you must link
+its Ruby name to the a CLOS class. Like this:
+CL-USER> (marshal:add-class "RubyClassName" 'lisp-class-name)
+
+Then declare 'lisp-class-name class. Its slots are translated to Ruby's object
+instance variable like a symbol, in other words, previous rules are applied.
+CL-USER> (defclass lisp-class-name ()
+           (name position-x))
+
+Internally an "@" is prepended, so 'lisp-class-name slots are linked like this:
+name <=> @name
+position-x <=> @position_x
+
+If a slot is missing a user-friendly error is signaled, telling which ones are
+lacking.
+
+Encoding is like decoding. Just calling #'MARSHAL:ADD-CLASS will encode it.
+
+
+User defined formats are declared like classes (with #'MARSHAL:ADD-USERDEF)
+but two extra method must be provided in the CLOS object, being the following
+generics:
+
+(defgeneric userdef-decode (object length bytes))
+(defgeneric userdef-encode (object))
+
+#'MARSHAL:USERDEF-ENCODE must return two values:
+(values length bytes-sequence)
+
+
+This library is still under heavy development. Regex, floats, bignums, modules
+and classes are missing.
+
+Byte stream decoding/encoding should be implemented. File streams a kind of
+limitative.
+

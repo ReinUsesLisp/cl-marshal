@@ -28,7 +28,7 @@
 (defun add-userdef (ruby-name lisp-name)
   (pushnew (make-ruby-lisp-pair ruby-name lisp-name) userdef-list :test #'equal))
 
-(defgeneric userdef-decode (object len bytes))
+(defgeneric userdef-decode (object length bytes))
 (defgeneric userdef-encode (object))
 
 (defun find-lisp-userdef (symbol)
