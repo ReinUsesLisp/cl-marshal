@@ -16,8 +16,9 @@
 ;;;;
 
 (defpackage :marshal
-  (:use #:cl #:alexandria #:trivial-utf-8 #:anaphora)
+  (:use #:cl #:alexandria #:trivial-utf-8 #:anaphora #:flexi-streams)
   (:export #:true #:false
            #:add-class #:add-userdef
            #:userdef-decode #:userdef-encode
-           #:decode-file #:encode-file))
+           #:decode #:decode-file #:decode-stream
+           #:encode #:encode-file #:encode-stream))

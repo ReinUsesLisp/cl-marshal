@@ -17,17 +17,25 @@
 
 (in-package :marshal)
 
+(defun decode (bytes &optional (package *package*))
+  (decode-stream (make-in-memory-input-stream bytes) package))
+
 (defun decode-file (path &optional (package *package*))
   (with-open-file (file path :element-type '(unsigned-byte 8))
-    (let ((major (read-byte file))
-          (minor (read-byte file)))
-      (when (or (/= major 4) (/= minor 8))
-        (error "Marshal version ~A.~A is invalid." major minor))
-      (decode file (make-hash-table :test #'equal) (make-hash-table :test #'equal)
-              package))))
+    (decode-stream file package)))
 
-(defun decode (file syms objs package)
+(defun decode-stream (file package)
   (declare (type stream file))
+  (let ((major (read-byte file))
+        (minor (read-byte file)))
+    (when (or (/= major 4) (/= minor 8))
+      (error "Marshal version ~A.~A is invalid." major minor))
+    (%decode file
+             (make-hash-table :test #'equal)
+             (make-hash-table :test #'equal)
+             package)))
+
+(defun %decode (file syms objs package)
   (eswitch ((read-byte file))
     (+nil+ nil)
     (+true+ 'true)
@@ -45,17 +53,19 @@
 
 (defun decode-userdef (file syms objs package)
   (let ((index (reserve-hash-index objs))
-        (class (decode file syms objs package))
-        (bytes (read-bytes file)))
+        (class (%decode file syms objs package))
+        (length (decode-integer file)))
     (unless (symbolp class)
       (error "Invalid Marshal data (class name is not a symbol)."))
-    (let ((object (make-instance (find-lisp-userdef class))))
-      (userdef-decode object (array-dimension bytes 0) bytes)
+    (let ((object (make-instance (find-lisp-userdef (symbol-name class))))
+          (previous-position (file-position file)))
+      (userdef-decode object file length)
+      (file-position file (+ previous-position length))
       (setf (gethash index objs) object))))
 
 (defun decode-object (file syms objs package)
   (let ((index (reserve-hash-index objs))
-        (class (decode file syms objs package)))
+        (class (%decode file syms objs package)))
     (unless (symbolp class)
       (error "Invalid Marshal data (class name is not a symbol)."))
     (destructuring-bind (raw-keys values) (read-pairs file syms objs package)
@@ -106,7 +116,7 @@
 (defun decode-array (file syms objs package)
   (let ((index (reserve-hash-index objs))
         (list (loop for i from 0 upto (1- (decode-integer file))
-                 collect (decode file syms objs package))))
+                 collect (%decode file syms objs package))))
     (setf (gethash index objs) list)))
 
 (defun decode-hash (file syms objs package)
@@ -139,7 +149,7 @@
   (loop with keys = nil
      with values = nil
      for i from 0 upto (1- (decode-integer file))
-     do (push (decode file syms objs package) keys)
-     do (push (decode file syms objs package) values)
+     do (push (%decode file syms objs package) keys)
+     do (push (%decode file syms objs package) values)
      finally (return-from read-pairs
                (list (nreverse keys) (nreverse values)))))

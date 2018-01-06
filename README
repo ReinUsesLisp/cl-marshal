@@ -58,11 +58,12 @@ User defined formats are declared like classes (with #'MARSHAL:ADD-USERDEF)
 but two extra method must be provided in the CLOS object, being the following
 generics:
 
-(defgeneric userdef-decode (object length bytes))
-(defgeneric userdef-encode (object))
+(defgeneric userdef-decode (object file length))
+(defgeneric userdef-encode (object file))
 
-#'MARSHAL:USERDEF-ENCODE must return two values:
-(values length bytes-sequence)
+Being object the target object, file a binary stream and length source data
+size in bytes. Reading more or less bytes is safe (if you read more than
+"length" bytes you'll get junk data, so it's not recommended).
 
 
 When decoding a Ruby boolean, 'marshal:true and 'marshal:false are used
@@ -74,7 +75,4 @@ empty Array.
 
 This library is still under heavy development. Regex, floats, bignums, hash
 tables with a default value, modules and classes are missing.
-
-Byte stream decoding/encoding should be implemented. File streams a kind of
-limitative.
 

@@ -17,18 +17,26 @@
 
 (in-package :marshal)
 
+(defun encode (object)
+  (let ((file (make-in-memory-output-stream)))
+    (encode-stream object file)
+    (get-output-stream-sequence file)))
+
 (defun encode-file (object path)
   (with-open-file (file path
                         :element-type '(unsigned-byte 8)
                         :direction :output
                         :if-exists :supersede)
-    ;; write version
-    (write-byte 4 file)
-    (write-byte 8 file)
-    (encode object file)))
+    (encode-stream object file)))
 
-(defun encode (object file)
+(defun encode-stream (object file)
   (declare (type stream file))
+  ;; write version
+  (write-byte 4 file)
+  (write-byte 8 file)
+  (%encode object file))
+
+(defun %encode (object file)
   (funcall
    (typecase object
      (null #'encode-nil)
@@ -53,8 +61,8 @@
   (let ((slot-definitions (closer-mop:class-direct-slots (class-of object))))
     (write-integer (length slot-definitions) file)
     (loop for slot in (mapcar #'closer-mop:slot-definition-name slot-definitions)
-       do (encode-symbol (format nil "@~A" (lisp-symbol->ruby-symbol slot)) file)
-         (encode (slot-value object slot) file))))
+       do (progn (encode-symbol (format nil "@~A" (lisp-symbol->ruby-symbol slot)) file)
+                 (%encode (slot-value object slot) file)))))
 
 (defun encode-bytes (object file)
   (declare (type (simple-array (unsigned-byte 8) (*)) object))
@@ -89,7 +97,7 @@
   (write-byte +array+ file)
   (write-integer (length object) file)
   (loop for element in object
-     do (encode element file)))
+     do (%encode element file)))
 
 (defun encode-hash-table (object file)
   (declare (type hash-table object))
@@ -97,8 +105,8 @@
   (write-integer (hash-table-count object) file)
   (loop for key being the hash-keys of object
      for value being the hash-values of object
-     do (encode key file)
-       (encode value file)))
+     do (progn (%encode key file)
+               (%encode value file))))
 
 (defun encode-symbol (object file)
   (declare (type (or symbol string) object))
