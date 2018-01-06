@@ -32,10 +32,6 @@
 (defconstant +object+ #.(char-code #\o))
 (defconstant +userdef+ #.(char-code #\u))
 
-(defun make-ruby-lisp-pair (ruby lisp) (cons ruby lisp))
-(defun get-ruby (pair) (car pair))
-(defun get-lisp (pair) (cdr pair))
-
 (defvar class-list nil)
 (defvar userdef-list nil)
 
@@ -47,6 +43,10 @@
 
 (defgeneric userdef-decode (object file length))
 (defgeneric userdef-encode (object file))
+
+(defun make-ruby-lisp-pair (ruby lisp) (cons ruby lisp))
+(defun get-ruby (pair) (car pair))
+(defun get-lisp (pair) (cdr pair))
 
 (defun find-lisp-userdef (symbol)
   (declare (type string symbol))
@@ -62,15 +62,18 @@
 
 (defun ruby-class-p (ruby-name)
   (member ruby-name class-list :key #'get-ruby :test #'string=))
+
 (defun ruby-userdef-p (ruby-name)
   (member ruby-name userdef-list :key #'get-ruby :test #'string=))
 
 (defun lisp-class-p (lisp-name)
   (member lisp-name class-list :key #'get-lisp))
+
 (defun lisp-userdef-p (lisp-name)
   (member lisp-name userdef-list :key #'get-lisp))
 
 (defun find-ruby-class (lisp-name)
   (get-ruby (find lisp-name class-list :key #'get-lisp)))
+
 (defun find-ruby-userdef (lisp-name)
   (get-ruby (find lisp-name userdef-list :key #'get-lisp)))
