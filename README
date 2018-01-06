@@ -1,10 +1,10 @@
 Common Lisp implementation of Ruby's marshaling library.
 It's designed to be practical, so correctness is secondary.
 
-To decode invoque:
+To decode, invoque:
 CL-USER> (marshal:decode-file "input-file")
 
-To encode invoque:
+To encode, invoque:
 CL-USER> (marshal:encode-file lisp-object "output-file")
 
 
@@ -24,7 +24,7 @@ symbols):
 :SomeTitle => 'SOMETITLE ('|SomeTitle| if it's a class name)
 :"some-title" => Error (it has hyphens)
 
-When encoding a Lisp symbol it's forced to be all caps (it's print is standard)
+When encoding a Lisp symbol it's forced to be all caps (its print is standard)
 and without underscores. Symbol is translated to lowercase and hyphens are
 replaced with underscores. Some examples:
 'object => :object
@@ -35,8 +35,8 @@ replaced with underscores. Some examples:
 
 Marshal library supports handling Ruby objects and user defined formats.
 
-When trying to decode a file with an object stored in it first you must link
-its Ruby name to the a CLOS class. Like this:
+When trying to decode a file with an object stored in it, first you must link
+its Ruby name to a CLOS class. Like this:
 CL-USER> (marshal:add-class "RubyClassName" 'lisp-class-name)
 
 Then declare 'lisp-class-name class. Its slots are translated to Ruby's object
@@ -55,14 +55,14 @@ Encoding is like decoding. Just calling #'MARSHAL:ADD-CLASS will encode it.
 
 
 User defined formats are declared like classes (with #'MARSHAL:ADD-USERDEF)
-but two extra method must be provided in the CLOS object, being the following
+but two extra methods must be provided in the CLOS object, being the following
 generics:
 
 (defgeneric userdef-decode (object file length))
 (defgeneric userdef-encode (object file))
 
-Being object the target object, file a binary stream and length source data
-size in bytes. Reading more or less bytes is safe (if you read more than
+Being "object" the target object, "file" a binary stream and "length" source
+data size in bytes. Reading more or less bytes is safe (if you read more than
 "length" bytes you'll get junk data, so it's not recommended).
 
 

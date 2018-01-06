@@ -16,7 +16,7 @@
 ;;;;
 
 (asdf:defsystem #:marshal
-  :description "Ruby marshal format decoding/encoding."
+  :description "Ruby's Marshal library practical implementation."
   :author "ReinUsesLisp <reinuseslisp@airmail.cc>"
   :license "LLGPL"
   :depends-on (:alexandria :trivial-utf-8 :anaphora :closer-mop :flexi-streams)
