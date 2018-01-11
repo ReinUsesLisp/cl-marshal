@@ -52,43 +52,40 @@
     (+userdef+ (decode-userdef file syms objs package))))
 
 (defun decode-userdef (file syms objs package)
-  (let ((index (reserve-hash-index objs))
-        (class (%decode file syms objs package))
+  (let ((class (%decode file syms objs package))
         (length (decode-integer file)))
     (unless (symbolp class)
       (error "Invalid Marshal data (class name is not a symbol)."))
     (let ((object (make-instance (find-lisp-userdef (symbol-name class))))
           (previous-position (file-position file)))
       (userdef-decode object file length)
-      (file-position file (+ previous-position length))
-      (setf (gethash index objs) object))))
+      (file-position file (+ previous-position length)))))
 
 (defun decode-object (file syms objs package)
-  (let ((index (reserve-hash-index objs))
-        (class (%decode file syms objs package)))
-    (unless (symbolp class)
-      (error "Invalid Marshal data (class name is not a symbol)."))
-    (destructuring-bind (raw-keys values) (read-pairs file syms objs package)
-      (let* ((lisp-class (find-lisp-class (symbol-name class)))
-             (object (make-instance lisp-class))
-             (keys (mapcar #'symbol->slot raw-keys)))
-        (awhen (remove-if (lambda (key) (slot-exists-p object key)) keys)
-          (error "Class ~A is lacking ~A." lisp-class it))
-        (loop for key in keys
-           for value in values
-           do (setf (slot-value object key) value))
-        (setf (gethash index objs) object)))))
+  (push-to-cache objs
+    (let ((class (%decode file syms objs package)))
+      (unless (symbolp class)
+        (error "Invalid Marshal data (class name is not a symbol)."))
+      (destructuring-bind (raw-keys values) (read-pairs file syms objs package)
+        (let* ((lisp-class (find-lisp-class (symbol-name class)))
+               (object (make-instance lisp-class))
+               (keys (mapcar #'symbol->slot raw-keys)))
+          (awhen (remove-if (lambda (key) (slot-exists-p object key)) keys)
+            (error "Class ~A is lacking ~A." lisp-class it))
+          (loop for key in keys
+             for value in values
+             do (setf (slot-value object key) value))
+          object)))))
 
 (defun decode-ascii (file objs)
   ;; I think it's not a good idea to solve invalid inputs returning them as a
   ;; byte sequence because "invalid" strings (e.g.: zlib data) may randomly be
   ;; stored as a "valid" string.
-  (let ((bytes (read-bytes file)))
-    (append-to-hash-and-return
-     objs
-     (handler-case (utf-8-bytes-to-string bytes)
-       ((or utf-8-decoding-error) ()
-         bytes)))))
+  (push-to-cache objs
+    (let ((bytes (read-bytes file)))
+      (handler-case (utf-8-bytes-to-string bytes)
+        ((or utf-8-decoding-error) ()
+          bytes)))))
 
 (defun decode-object-ref (file objs)
   (multiple-value-bind (value found) (gethash (decode-integer file) objs)
@@ -110,33 +107,34 @@
       (error "Invalid Marshal data (invalid symlink).")))
 
 (defun decode-symbol (file syms package)
-  (let ((name (read-utf-8-string file :byte-length (decode-integer file))))
-    (append-to-hash-and-return syms (ruby-symbol->lisp-symbol name package))))
+  (push-to-cache syms
+    (ruby-symbol->lisp-symbol
+     (read-utf-8-string file :byte-length (decode-integer file))
+     package)))
 
 (defun decode-array (file syms objs package)
-  (let ((index (reserve-hash-index objs))
-        (list (loop for i from 0 upto (1- (decode-integer file))
-                 collect (%decode file syms objs package))))
-    (setf (gethash index objs) list)))
+  (push-to-cache objs
+    (loop for i from 0 upto (1- (decode-integer file))
+       collect (%decode file syms objs package))))
 
 (defun decode-hash (file syms objs package)
-  (let* ((hash (make-hash-table :test #'equal)))
-    (loop with (keys values) = (read-pairs file syms objs package)
-       for key in keys
-       for value in values
-       do (setf (gethash key hash) value))
-    (append-to-hash-and-return objs hash)))
+  (push-to-cache objs
+    (let ((hash (make-hash-table :test #'equal)))
+      (loop with (keys values) = (read-pairs file syms objs package)
+         for key in keys
+         for value in values
+         do (setf (gethash key hash) value))
+      hash)))
 
 (defun decode-ivar (file syms objs package)
-  (let ((index (reserve-hash-index objs))
-        (mode (read-byte-char file))
-        (bytes (read-bytes file)))
-    ;; for now, ignore key values
-    (read-pairs file syms objs package)
-    (setf (gethash index objs)
-          (ecase mode
-            (#\" (utf-8-bytes-to-string bytes))
-            (#\/ (error "Regex are not implemented (yet®)."))))))
+  (push-to-cache objs
+    (let ((mode (read-byte-char file))
+          (bytes (read-bytes file)))
+      ;; for now, ignore key values
+      (read-pairs file syms objs package)
+      (ecase mode
+        (#\" (utf-8-bytes-to-string bytes))
+        (#\/ (error "Regex are not implemented (yet®)."))))))
 
 (defun read-bytes (file)
   (let* ((len (decode-integer file))

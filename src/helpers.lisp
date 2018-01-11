@@ -28,9 +28,13 @@
     (setf (gethash index hash) nil)
     index))
 
-(defun append-to-hash-and-return (hash value)
-  (setf (gethash (hash-table-count hash) hash) value)
-  value)
+(defmacro push-to-cache (cache-hash &body body)
+  (with-gensyms (g!index g!cache-hash)
+    `(let ((,g!cache-hash ,cache-hash))
+       (let ((,g!index (reserve-hash-index ,g!cache-hash)))
+         ;; setf returns value
+         (setf (gethash ,g!index ,g!cache-hash)
+               (progn ,@body))))))
 
 (defun read-integer (file bytes)
   ;; TODO test in big-endian
