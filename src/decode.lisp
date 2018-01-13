@@ -59,7 +59,8 @@
     (let ((object (make-instance (find-lisp-userdef (symbol-name class))))
           (previous-position (file-position file)))
       (userdef-decode object file length)
-      (file-position file (+ previous-position length)))))
+      (file-position file (+ previous-position length))
+      object)))
 
 (defun decode-object (file syms objs package)
   (push-to-cache objs
