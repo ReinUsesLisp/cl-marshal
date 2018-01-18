@@ -2,15 +2,15 @@ Common Lisp implementation of Ruby's marshaling library.
 It's designed to be practical, so correctness is secondary.
 
 To decode, invoque:
-CL-USER> (marshal:decode-file "input-file")
+CL-USER> (rmarshal:decode-file "input-file")
 
 To encode, invoque:
-CL-USER> (marshal:encode-file lisp-object "output-file")
+CL-USER> (rmarshal:encode-file lisp-object "output-file")
 
 
 To install, clone this repository into your quicklisp/local-projects directory
 and build it:
-CL-USER> (ql:quickload :marshal)
+CL-USER> (ql:quickload :rmarshal)
 
 
 Ruby symbols are kind of tricky to convert to Lisp symbols and viceversa.
@@ -37,7 +37,7 @@ Marshal library supports handling Ruby objects and user defined formats.
 
 When trying to decode a file with an object stored in it, first you must link
 its Ruby name to a CLOS class. Like this:
-CL-USER> (marshal:add-class "RubyClassName" 'lisp-class-name)
+CL-USER> (rmarshal:add-class "RubyClassName" 'lisp-class-name)
 
 Then declare 'lisp-class-name class. Its slots are translated to Ruby's object
 instance variable like a symbol, in other words, previous rules are applied.
@@ -66,7 +66,7 @@ data size in bytes. Reading more or less bytes is safe (if you read more than
 "length" bytes you'll get junk data, so it's not recommended).
 
 
-When decoding a Ruby boolean, 'marshal:true and 'marshal:false are used
+When decoding a Ruby boolean, 'rmarshal:true and 'rmarshal:false are used
 instead of t and nil. Same goes for encoding (t is unhandled, nil is NilClass)
 
 Encoding an empty list will be done as a NilClass Ruby object instead of an

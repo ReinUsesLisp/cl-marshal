@@ -15,7 +15,7 @@
 ;;;;    along with cl-marshal.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;
 
-(asdf:defsystem #:marshal
+(asdf:defsystem #:rmarshal
   :description "Ruby's Marshal library practical implementation."
   :author "ReinUsesLisp <reinuseslisp@airmail.cc>"
   :license "LLGPL"
